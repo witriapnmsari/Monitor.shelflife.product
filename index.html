@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ShelfLife Penerimaan Barang Banjarmasin MT</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        accent: {
+                            50: '#eef2ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Master Data JS -->
+    <script src="master_data.js"></script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        input, select, textarea, button {
+            touch-action: manipulation;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; color: black; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pb-24 md:pb-8">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="bg-emerald-600 text-white p-2 rounded-xl shadow-md flex items-center justify-center">
+                    <i data-lucide="package-check" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm sm:text-base md:text-lg font-bold text-slate-900 leading-tight flex items-center gap-1.5 flex-wrap">
+                        ShelfLife Penerimaan Barang <span class="bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 rounded-full">Banjarmasin MT</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-500">Monitoring & Kalkulator Sisa Umur Barang Masuk </p>
+                </div>
+            </div>
+            <!-- Quick Action button -->
+            <div class="flex items-center gap-2">
+                <button onclick="openExportModal()" class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition border border-slate-200">
+                    <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i>
+                    <span class="hidden sm:inline">Tarik</span> Laporan
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto px-3.5 sm:px-4 py-4 w-full flex-1">
+
+        <!-- Nav Tabs (Segmented Control for Mobile) -->
+        <div class="grid grid-cols-4 bg-slate-200/80 p-1 rounded-2xl mb-4 text-xs font-semibold max-w-lg mx-auto gap-1">
+            <button onclick="switchTab('input')" id="tab-btn-input" class="py-2.5 rounded-xl transition flex items-center justify-center gap-1 bg-white text-emerald-700 shadow-sm">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                <span>Input GR</span>
+            </button>
+            <button onclick="switchTab('master')" id="tab-btn-master" class="py-2.5 rounded-xl transition flex items-center justify-center gap-1 text-slate-600 hover:text-slate-900">
+                <i data-lucide="database" class="w-3.5 h-3.5"></i>
+                <span>Master</span>
+            </button>
+            <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="py-2.5 rounded-xl transition flex items-center justify-center gap-1 text-slate-600 hover:text-slate-900">
+                <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
+                <span>Ringkasan</span>
+            </button>
+            <button onclick="switchTab('history')" id="tab-btn-history" class="py-2.5 rounded-xl transition flex items-center justify-center gap-1 text-slate-600 hover:text-slate-900">
+                <i data-lucide="table" class="w-3.5 h-3.5"></i>
+                <span>Riwayat (<span id="total-badge-count">0</span>)</span>
+            </button>
+        </div>
+
+        <!-- ================= TAB 1: FORM INPUT (OPTIMIZED FOR MOBILE) ================= -->
+        <section id="tab-input" class="space-y-4">
+            <!-- Form Card -->
+            <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm">
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-emerald-50 text-emerald-600 p-1.5 rounded-lg"><i data-lucide="scan-line" class="w-4 h-4"></i></span>
+                        <h2 class="font-bold text-slate-800 text-sm sm:text-base">Input Penerimaan Barang Masuk</h2>
+                    </div>
+                    <span class="text-[11px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md font-semibold">Master Terhubung</span>
+                </div>
+
+                <form id="grForm" onsubmit="handleFormSubmit(event)" class="space-y-3.5">
+
+                    <!-- PENCARIAN MASTER BARANG (AUTOCOMPLETE SEARCH) -->
+                    <div class="relative">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                                <i data-lucide="search" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                Cari Kode atau Nama Barang di Master *
+                            </label>
+                            <span class="text-[10px] text-slate-400">Ketik 300438, Richeese, Nextar, dll.</span>
+                        </div>
+                        <input type="text" id="masterSearchInput" oninput="handleMasterSearch(this.value)" autocomplete="off"
+                            placeholder="Ketik Kode Barang (contoh: 300438) atau Nama Produk..." 
+                            class="w-full px-3.5 py-3 text-sm bg-emerald-50/40 border-2 border-emerald-500/60 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-600 font-medium transition shadow-sm">
+                        
+                        <!-- Search Dropdown Results -->
+                        <div id="masterDropdown" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 max-h-64 overflow-y-auto divide-y divide-slate-100">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- KODE BARANG & NAMA BARANG TERPILIH -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Kode Barang</label>
+                            <input type="text" id="productCode" readonly placeholder="Pilih dari pencarian" 
+                                class="w-full px-3.5 py-2.5 text-sm bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-mono font-bold">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Produk / Barang *</label>
+                            <input type="text" id="productName" required placeholder="Nama produk akan terisi otomatis" 
+                                class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition font-medium">
+                        </div>
+                    </div>
+
+                    <!-- INFO KEMASAN (ISI, ISI/KTN) & MASTER SHELF LIFE -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                        <div>
+                            <span class="text-slate-500 block text-[10px]">Isi Satuan</span>
+                            <input type="text" id="masterIsi" readonly value="-" class="w-full bg-transparent font-bold text-slate-700">
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block text-[10px]">Isi / Ktn / Box</span>
+                            <input type="text" id="masterIsiKtn" readonly value="-" class="w-full bg-transparent font-bold text-slate-700">
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block text-[10px]">Umur (Bulan)</span>
+                            <span id="displayMasterMonths" class="font-bold text-indigo-700">12 Bulan</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block text-[10px]">Standar Shelf Life</span>
+                            <span id="displayMasterDays" class="font-bold text-emerald-700">360 Hari</span>
+                            <input type="hidden" id="masterShelfLifeDays" value="360">
+                        </div>
+                    </div>
+
+                    <!-- QTY PENERIMAAN & SUPPLIER -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Jumlah Masuk (Karton) *</label>
+                            <input type="number" id="qtyKtn" required min="1" value="50"
+                                class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Supplier / Vendor</label>
+                            <input type="text" id="supplier" value="PT Kaldu Sari Nabati" 
+                                class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition">
+                        </div>
+                    </div>
+
+                    <!-- ================= PARAMETER TANGGAL PENERIMAAN & UMUR ================= -->
+                    <div class="p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                                <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-600"></i>
+                                Tanggal Penerimaan & Masa Kadaluarsa
+                            </span>
+                            <span class="text-[10px] text-emerald-800 bg-emerald-200/70 font-semibold px-2 py-0.5 rounded-full">Hitung Otomatis</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Tanggal Terima -->
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-[11px] font-bold text-slate-700">Tgl Penerimaan (Hari Masuk) *</label>
+                                    <button type="button" onclick="setTodayReceiving()" class="text-[10px] text-emerald-700 font-bold hover:underline">Hari Ini</button>
+                                </div>
+                                <input type="date" id="receiveDate" required onchange="calculateShelfLife()" 
+                                    class="w-full px-3 py-2 text-xs sm:text-sm font-semibold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 transition">
+                            </div>
+
+                            <!-- Tanggal Kadaluarsa (EXP) -->
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                    Tgl Kadaluarsa (EXP) *
+                                    <span class="text-[9px] text-emerald-600 font-normal">(Lihat Fisik Dus)</span>
+                                </label>
+                                <input type="date" id="expDate" required onchange="calculateShelfLife()" 
+                                    class="w-full px-3 py-2 text-xs sm:text-sm font-semibold bg-white border-2 border-emerald-400 rounded-xl focus:ring-2 focus:ring-emerald-500 transition">
+                            </div>
+                        </div>
+
+                        <!-- SLA Minimum Standard -->
+                        <div class="flex items-center justify-between pt-1 text-xs">
+                            <span class="text-slate-600 font-medium">Batas Minimum Standar Gudang (SLA):</span>
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="minThreshold" value="75" min="10" max="95" onchange="calculateShelfLife()" 
+                                    class="w-14 px-2 py-1 text-center font-bold text-xs bg-white border border-slate-300 rounded-lg">
+                                <span class="font-bold text-slate-700">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================= LIVE PREVIEW CARD (HASIL HITUNGAN LANGSUNG) ================= -->
+                    <div id="liveResultCard" class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 rounded-2xl shadow-lg transition-all duration-300">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Sisa Umur Produk Saat Barang Masuk</span>
+                                <h3 id="resultPercentage" class="text-3xl sm:text-4xl font-extrabold text-emerald-400">0.0%</h3>
+                            </div>
+                            <div id="resultStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-700 text-slate-300 flex items-center gap-1">
+                                <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+                                <span>Menunggu Input</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar Visual -->
+                        <div class="w-full bg-slate-700/80 rounded-full h-3.5 mb-3 overflow-hidden p-0.5 border border-slate-600">
+                            <div id="resultProgressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+
+                        <!-- Detail Metrics -->
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60">
+                            <div>
+                                <span class="text-slate-400 block text-[10px]">Total Shelf Life</span>
+                                <span id="metricTotalDays" class="font-bold text-white">- Hari</span>
+                            </div>
+                            <div class="border-x border-slate-700">
+                                <span class="text-slate-400 block text-[10px]">Sisa Masa Simpan</span>
+                                <span id="metricRemainingDays" class="font-bold text-emerald-300">- Hari</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block text-[10px]">Sudah Terpakai</span>
+                                <span id="metricElapsedDays" class="font-bold text-slate-300">- Hari</span>
+                            </div>
+                        </div>
+
+                        <!-- Keterangan Rekomendasi Tindakan -->
+                        <p id="resultRecommendation" class="text-xs text-slate-300 mt-2.5 flex items-start gap-1.5">
+                            <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i>
+                            <span>Pilih barang dari master dan masukkan tanggal expired untuk melihat sisa umur.</span>
+                        </p>
+                    </div>
+
+                    <!-- Catatan Tambahan -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Catatan / Putaway Info (Opsional)</label>
+                        <input type="text" id="notes" placeholder="Contoh: Masuk Rak A-02 / Prioritas Fast Move FEFO" 
+                            class="w-full px-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="pt-2 flex gap-2">
+                        <button type="button" onclick="resetForm()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs rounded-xl transition border border-slate-200">
+                            Reset
+                        </button>
+                        <button type="submit" id="btnSave" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            <span>Simpan Penerimaan Barang</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: MASTER BARANG (750+ ITEMS EXPLORER & MANAGEMENT) ================= -->
+        <section id="tab-master" class="space-y-3.5 hidden">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-1.5">
+                            <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i>
+                            Daftar Master Barang (<span id="masterTotalDisplay">0</span> Produk)
+                        </h2>
+                        <p class="text-[11px] text-slate-500">Database Shelf Life & Standar Masa Simpan Produk</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportMasterToExcel()" title="Download Semua Master ke Excel" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 transition flex items-center gap-1.5">
+                            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <span class="hidden sm:inline">Ekspor</span> Excel
+                        </button>
+                        <button onclick="openAddMasterModal()" class="flex-1 sm:flex-none px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            <span>Tambah Master</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                    <input type="text" id="masterFilterInput" oninput="renderMasterTable()" placeholder="Cari kode (300438) atau nama barang..." 
+                        class="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition">
+                </div>
+            </div>
+
+            <!-- Master Items List -->
+            <div id="masterListContainer" class="space-y-2 max-h-[70vh] overflow-y-auto">
+                <!-- Injected by JS -->
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: DASHBOARD & RINGKASAN ================= -->
+        <section id="tab-dashboard" class="space-y-4 hidden">
+            <!-- KPI Summary Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="flex items-center justify-between text-slate-400 mb-1">
+                        <span class="text-[11px] font-semibold">Total Masuk</span>
+                        <i data-lucide="boxes" class="w-4 h-4 text-slate-500"></i>
+                    </div>
+                    <div class="text-xl font-bold text-slate-800" id="kpi-total-items">0</div>
+                    <span class="text-[10px] text-slate-400">Transaksi GR</span>
+                </div>
+
+                <div class="bg-white p-3.5 rounded-2xl border border-emerald-100 shadow-sm bg-emerald-50/20">
+                    <div class="flex items-center justify-between text-emerald-600 mb-1">
+                        <span class="text-[11px] font-semibold">Diterima (Lolos)</span>
+                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+                    </div>
+                    <div class="text-xl font-bold text-emerald-700" id="kpi-accepted">0</div>
+                    <span class="text-[10px] text-emerald-600 font-medium" id="kpi-accepted-pct">0% dari total</span>
+                </div>
+
+                <div class="bg-white p-3.5 rounded-2xl border border-amber-100 shadow-sm bg-amber-50/20">
+                    <div class="flex items-center justify-between text-amber-600 mb-1">
+                        <span class="text-[11px] font-semibold">Butuh Approval</span>
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i>
+                    </div>
+                    <div class="text-xl font-bold text-amber-700" id="kpi-warning">0</div>
+                    <span class="text-[10px] text-amber-600 font-medium">&lt; Standar SLA</span>
+                </div>
+
+                <div class="bg-white p-3.5 rounded-2xl border border-rose-100 shadow-sm bg-rose-50/20">
+                    <div class="flex items-center justify-between text-rose-600 mb-1">
+                        <span class="text-[11px] font-semibold">Ditolak / Exp</span>
+                        <i data-lucide="x-circle" class="w-4 h-4 text-rose-500"></i>
+                    </div>
+                    <div class="text-xl font-bold text-rose-700" id="kpi-rejected">0</div>
+                    <span class="text-[10px] text-rose-600 font-medium">Wajib retur</span>
+                </div>
+            </div>
+
+            <!-- Average Shelf Life Status Card -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="space-y-1 text-center sm:text-left">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Rata-rata Sisa Umur Barang Masuk</span>
+                    <div class="flex items-center justify-center sm:justify-start gap-2">
+                        <span class="text-3xl font-extrabold text-slate-800" id="kpi-avg-pct">0%</span>
+                        <span id="kpi-health-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Optimal</span>
+                    </div>
+                    <p class="text-xs text-slate-500">Kesehatan sisa masa simpan produk saat pertama kali tiba di gudang.</p>
+                </div>
+                <div class="w-full sm:w-64 max-w-[200px] h-36 relative flex items-center justify-center">
+                    <canvas id="shelfLifeChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: RIWAYAT DATA & LAPORAN ================= -->
+        <section id="tab-history" class="space-y-3.5 hidden">
+            <!-- Search & Filter Bar -->
+            <div class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm space-y-2.5">
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                        <input type="text" id="searchInput" oninput="renderHistoryList()" placeholder="Cari nama, kode barang, batch..." 
+                            class="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+                    <button onclick="openExportModal()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1 shrink-0">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span>Tarik Laporan</span>
+                    </button>
+                </div>
+
+                <!-- Status Filter Pills -->
+                <div class="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-medium no-scrollbar">
+                    <button onclick="setStatusFilter('ALL')" id="filter-btn-ALL" class="filter-pill px-3 py-1.5 rounded-xl bg-slate-800 text-white shrink-0">Semua</button>
+                    <button onclick="setStatusFilter('ACCEPTED')" id="filter-btn-ACCEPTED" class="filter-pill px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">Lolos (&ge;75%)</button>
+                    <button onclick="setStatusFilter('WARNING')" id="filter-btn-WARNING" class="filter-pill px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">Butuh Approval</button>
+                    <button onclick="setStatusFilter('REJECTED')" id="filter-btn-REJECTED" class="filter-pill px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">Ditolak / Retur</button>
+                </div>
+            </div>
+
+            <!-- List of Items -->
+            <div id="historyListContainer" class="space-y-2.5">
+                <!-- Data will be dynamically rendered here -->
+            </div>
+
+            <!-- Empty state -->
+            <div id="emptyState" class="hidden text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-6">
+                <i data-lucide="inbox" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                <h4 class="font-bold text-slate-700 text-sm">Belum Ada Data Penerimaan</h4>
+                <p class="text-xs text-slate-400 mb-3">Data yang Anda input akan otomatis muncul di sini dan tersimpan di HP Anda.</p>
+                <button onclick="switchTab('input')" class="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow">Input Sekarang</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar for Mobile Phones (Fixed Bottom) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 py-1.5 px-4 sm:hidden shadow-lg no-print">
+        <div class="flex justify-around items-center">
+            <button onclick="switchTab('input')" id="mobile-nav-input" class="flex flex-col items-center gap-1 text-emerald-600 font-semibold py-1">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                <span class="text-[10px]">Input GR</span>
+            </button>
+            <button onclick="switchTab('master')" id="mobile-nav-master" class="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-800 py-1">
+                <i data-lucide="database" class="w-5 h-5"></i>
+                <span class="text-[10px]">Master</span>
+            </button>
+            <button onclick="switchTab('dashboard')" id="mobile-nav-dashboard" class="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-800 py-1">
+                <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                <span class="text-[10px]">Ringkasan</span>
+            </button>
+            <button onclick="switchTab('history')" id="mobile-nav-history" class="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-800 py-1">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+                <span class="text-[10px]">Riwayat</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ================= MODAL TARIK LAPORAN (EXPORT MODAL) ================= -->
+    <div id="exportModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <span class="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg"><i data-lucide="file-text" class="w-4 h-4"></i></span>
+                    <h3 class="font-bold text-slate-800 text-base">Tarik Laporan Penerimaan</h3>
+                </div>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500">Pilih format laporan penerimaan barang & sisa umur:</p>
+
+            <div class="grid grid-cols-1 gap-2.5">
+                <!-- EXCEL DOWNLOAD -->
+                <button onclick="exportToExcel()" class="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition text-left group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow">
+                            XLS
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 group-hover:text-emerald-700">Download Excel (.xlsx)</h4>
+                            <p class="text-[11px] text-slate-500">Lengkap dengan Kode Barang, Sisa Hari & % Umur</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:text-emerald-600"></i>
+                </button>
+
+                <!-- CSV DOWNLOAD -->
+                <button onclick="exportToCSV()" class="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 transition text-left group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow">
+                            CSV
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 group-hover:text-blue-700">Download Data CSV</h4>
+                            <p class="text-[11px] text-slate-500">Untuk impor ke sistem ERP / WMS / Google Sheets</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:text-blue-600"></i>
+                </button>
+
+                <!-- CETAK / PDF -->
+                <button onclick="printOrPDF()" class="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-rose-500 hover:bg-rose-50/40 transition text-left group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow">
+                            PDF
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 group-hover:text-rose-700">Cetak / Simpan PDF</h4>
+                            <p class="text-[11px] text-slate-500">Format resmi Berita Acara Penerimaan Gudang</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:text-rose-600"></i>
+                </button>
+
+                <!-- SHARE WHATSAPP SUMMARY -->
+                <button onclick="shareWhatsAppSummary()" class="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-green-500 hover:bg-green-50/40 transition text-left group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-green-500 text-white flex items-center justify-center font-bold text-sm shadow">
+                            <i data-lucide="message-circle" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 group-hover:text-green-700">Salin Rekap ke WhatsApp</h4>
+                            <p class="text-[11px] text-slate-500">Format teks rapi untuk kirim ke grup WA tim/manajer</p>
+                        </div>
+                    </div>
+                    <i data-lucide="copy" class="w-4 h-4 text-slate-400 group-hover:text-green-600"></i>
+                </button>
+            </div>
+
+            <button onclick="closeExportModal()" class="w-full py-2.5 text-center text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-100 rounded-xl">
+                Batal
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= MODAL TAMBAH MASTER BARANG ================= -->
+    <div id="addMasterModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <span class="bg-emerald-100 text-emerald-700 p-2 rounded-xl"><i data-lucide="plus-circle" class="w-5 h-5"></i></span>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Tambah Master Barang Baru</h3>
+                        <p class="text-[11px] text-slate-500">Tambahkan SKU / Produk baru ke database</p>
+                    </div>
+                </div>
+                <button onclick="closeAddMasterModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="addMasterForm" onsubmit="saveNewMasterProduct(event)" class="space-y-3.5">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Kode Barang *</label>
+                        <input type="text" id="newMasterCode" required placeholder="Contoh: 309999" 
+                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 font-mono font-bold transition">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nama Produk / Barang *</label>
+                        <input type="text" id="newMasterName" required placeholder="Contoh: RICHEESE WAFER 100g" 
+                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 font-medium transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Isi Satuan</label>
+                        <input type="text" id="newMasterIsi" value="24" placeholder="24 / 60 / 120" 
+                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Isi per Karton / Box</label>
+                        <input type="text" id="newMasterIsiKtn" value="24" placeholder="24 / 6 / 12" 
+                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition">
+                    </div>
+                </div>
+
+                <div class="p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-200 space-y-2.5">
+                    <span class="text-xs font-bold text-emerald-950 flex items-center gap-1">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        Parameter Shelf Life (Masa Simpan)
+                    </span>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Umur (Bulan) *</label>
+                            <input type="number" id="newMasterMonths" required min="1" max="60" value="12" oninput="onNewMasterMonthsInput(this.value)" 
+                                class="w-full px-3 py-2 text-sm font-bold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Total Shelf Life (Hari) *</label>
+                            <input type="number" id="newMasterDays" required min="1" max="2000" value="360" 
+                                class="w-full px-3 py-2 text-sm font-bold bg-white border-2 border-emerald-500 rounded-xl focus:ring-2 focus:ring-emerald-500 transition">
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-500">*Hari dihitung otomatis: Umur Bulan &times; 30 (bisa disesuaikan manual).</p>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeAddMasterModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs rounded-xl transition">
+                        Batal
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Simpan ke Master Data</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-4 right-4 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 transform transition-all duration-300 opacity-0 pointer-events-none translate-y-[-10px]">
+        <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toastMsg">Data berhasil disimpan!</span>
+    </div>
+
+    <!-- APPLICATION LOGIC -->
+    <script>
+        const STORAGE_KEY = 'SHELF_LIFE_RECORDS_V2';
+        const CUSTOM_MASTER_KEY = 'CUSTOM_MASTER_PRODUCTS_V2';
+        let records = [];
+        let masterList = [];
+        let currentStatusFilter = 'ALL';
+        let chartInstance = null;
+
+        function loadMasterList() {
+            const builtin = (typeof MASTER_PRODUCTS !== 'undefined') ? [...MASTER_PRODUCTS] : [];
+            let custom = [];
+            const rawCustom = localStorage.getItem(CUSTOM_MASTER_KEY);
+            if (rawCustom) {
+                try {
+                    custom = JSON.parse(rawCustom);
+                } catch(e) {
+                    custom = [];
+                }
+            }
+            // Put custom items on top
+            masterList = [...custom, ...builtin];
+            const displayCount = document.getElementById('masterTotalDisplay');
+            if (displayCount) displayCount.innerText = masterList.length;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadMasterList();
+            loadRecords();
+            setTodayReceiving();
+            renderMasterTable();
+            lucide.createIcons();
+            initChart();
+            updateDashboard();
+
+            // Close dropdown if clicked outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#masterSearchInput') && !e.target.closest('#masterDropdown')) {
+                    document.getElementById('masterDropdown').classList.add('hidden');
+                }
+            });
+        });
+
+        // Load & Save Records
+        function loadRecords() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    records = JSON.parse(raw);
+                } catch(e) {
+                    records = [];
+                }
+            } else {
+                // Seed with initial example using real code
+                records = [
+                    {
+                        id: 'GR-1001',
+                        code: '300438',
+                        productName: 'RICHEESE WAFER KEJU 8,5g (6x20 pcs) MT',
+                        isi: '120',
+                        isiKtn: '6',
+                        qtyKtn: 100,
+                        supplier: 'PT Kaldu Sari Nabati',
+                        receiveDate: '2026-08-24',
+                        expDate: '2027-05-27',
+                        totalDays: 360,
+                        remainingDays: 276,
+                        percentage: 76.67,
+                        threshold: 75,
+                        status: 'ACCEPTED',
+                        statusLabel: 'Diterima (Lolos)',
+                        notes: 'Standar FEFO Masuk Rak A-01',
+                        createdAt: '2026-08-24T10:15:00.000Z'
+                    }
+                ];
+                saveRecords();
+            }
+            updateTotalBadge();
+            renderHistoryList();
+        }
+
+        function saveRecords() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            updateTotalBadge();
+            updateDashboard();
+        }
+
+        function updateTotalBadge() {
+            const badge = document.getElementById('total-badge-count');
+            if (badge) badge.innerText = records.length;
+        }
+
+        function setTodayReceiving() {
+            const today = new Date().toISOString().split('T')[0];
+            const elem = document.getElementById('receiveDate');
+            if (elem) {
+                elem.value = today;
+                calculateShelfLife();
+            }
+        }
+
+        // Search Master Autocomplete
+        function handleMasterSearch(query) {
+            const dropdown = document.getElementById('masterDropdown');
+            const q = query.trim().toLowerCase();
+
+            if (!q || q.length < 2) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            const results = masterList.filter(item => 
+                item.code.toLowerCase().includes(q) || 
+                item.name.toLowerCase().includes(q)
+            ).slice(0, 15);
+
+            if (results.length === 0) {
+                dropdown.innerHTML = `
+                    <div class="p-3 text-xs text-slate-400 text-center">
+                        Tidak ada barang dengan kode/nama "<b>${escapeHtml(query)}</b>"
+                    </div>`;
+                dropdown.classList.remove('hidden');
+                return;
+            }
+
+            let html = '';
+            results.forEach(item => {
+                html += `
+                <div onclick="selectMasterProduct('${item.code}')" class="p-3 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer transition flex items-center justify-between text-left">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold">${item.code}</span>
+                            <span class="text-xs font-bold text-slate-800">${item.name}</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">
+                            Isi: ${item.isi} (${item.isiKtn}/ktn) &bull; Shelf Life: <span class="font-semibold text-emerald-700">${item.shelfLifeDays} Hari</span> (${item.shelfLifeMonths} Bulan)
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                </div>`;
+            });
+
+            dropdown.innerHTML = html;
+            dropdown.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function selectMasterProduct(code) {
+            const item = masterList.find(p => p.code === code);
+            if (!item) return;
+
+            document.getElementById('productCode').value = item.code;
+            document.getElementById('productName').value = item.name;
+            document.getElementById('masterIsi').value = item.isi;
+            document.getElementById('masterIsiKtn').value = item.isiKtn;
+            document.getElementById('displayMasterMonths').innerText = `${item.shelfLifeMonths} Bulan`;
+            document.getElementById('displayMasterDays').innerText = `${item.shelfLifeDays} Hari`;
+            document.getElementById('masterShelfLifeDays').value = item.shelfLifeDays;
+
+            document.getElementById('masterSearchInput').value = `${item.code} - ${item.name}`;
+            document.getElementById('masterDropdown').classList.add('hidden');
+
+            // If Exp Date already set, recalculate
+            calculateShelfLife();
+            showToast(`✅ Barang "${item.name}" terpilih!`);
+        }
+
+        // Calculate Remaining Shelf Life
+        function calculateShelfLife() {
+            const receiveVal = document.getElementById('receiveDate').value;
+            const expVal = document.getElementById('expDate').value;
+            const masterDays = parseInt(document.getElementById('masterShelfLifeDays').value) || 360;
+            const threshold = parseFloat(document.getElementById('minThreshold').value) || 75;
+
+            const resPct = document.getElementById('resultPercentage');
+            const resBadge = document.getElementById('resultStatusBadge');
+            const resBar = document.getElementById('resultProgressBar');
+            const resTotal = document.getElementById('metricTotalDays');
+            const resRem = document.getElementById('metricRemainingDays');
+            const resElp = document.getElementById('metricElapsedDays');
+            const resRec = document.getElementById('resultRecommendation');
+
+            if (!receiveVal || !expVal) {
+                resPct.innerText = '0.0%';
+                resBadge.innerHTML = `<i data-lucide="help-circle" class="w-3.5 h-3.5"></i> <span>Menunggu Input</span>`;
+                resBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-slate-700 text-slate-300 flex items-center gap-1';
+                resBar.style.width = '0%';
+                resTotal.innerText = `${masterDays} Hari`;
+                resRem.innerText = '- Hari';
+                resElp.innerText = '- Hari';
+                resRec.innerHTML = `<i data-lucide="info" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i> <span>Masukkan tanggal kadaluarsa (EXP) barang.</span>`;
+                lucide.createIcons();
+                return null;
+            }
+
+            const dReceive = new Date(receiveVal);
+            const dExp = new Date(expVal);
+            const ONE_DAY = 1000 * 60 * 60 * 24;
+
+            const remainingDays = Math.round((dExp - dReceive) / ONE_DAY);
+            const elapsedDays = masterDays - remainingDays;
+
+            let percentage = (remainingDays / masterDays) * 100;
+            if (percentage < 0) percentage = 0;
+            if (percentage > 100) percentage = 100;
+
+            const formattedPct = percentage.toFixed(1) + '%';
+            resPct.innerText = formattedPct;
+            resTotal.innerText = `${masterDays} Hari`;
+            resRem.innerText = `${remainingDays} Hari`;
+            resElp.innerText = `${elapsedDays > 0 ? elapsedDays : 0} Hari`;
+
+            let status = 'ACCEPTED';
+            let statusLabel = 'DITERIMA (LOLOS)';
+
+            if (remainingDays <= 0) {
+                status = 'REJECTED';
+                statusLabel = 'DITOLAK (EXPIRED)';
+                resBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white flex items-center gap-1';
+                resBadge.innerHTML = `<i data-lucide="x-circle" class="w-3.5 h-3.5"></i> <span>${statusLabel}</span>`;
+                resBar.className = 'bg-rose-500 h-full rounded-full transition-all duration-500';
+                resBar.style.width = '100%';
+                resRec.innerHTML = `<span class="text-rose-300 font-medium">❌ Barang sudah kadaluarsa saat tiba di hari penerimaan. Wajib tolak & buat form Retur ke Supplier (RTV).</span>`;
+            } else if (percentage >= threshold) {
+                status = 'ACCEPTED';
+                statusLabel = `DITERIMA (LOLOS &ge;${threshold}%)`;
+                resBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-slate-950 flex items-center gap-1';
+                resBadge.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5"></i> <span>${statusLabel}</span>`;
+                resBar.className = 'bg-emerald-400 h-full rounded-full transition-all duration-500';
+                resBar.style.width = `${percentage}%`;
+                resRec.innerHTML = `<span class="text-emerald-300 font-medium">✅ Sisa umur memenuhi standar gudang (${percentage.toFixed(1)}% &ge; ${threshold}%). Sisa ${remainingDays} hari. Lolos QC & lanjut Putaway FEFO.</span>`;
+            } else {
+                status = 'WARNING';
+                statusLabel = `REVIEW (<${threshold}%)`;
+                resBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-slate-950 flex items-center gap-1';
+                resBadge.innerHTML = `<i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> <span>${statusLabel}</span>`;
+                resBar.className = 'bg-amber-400 h-full rounded-full transition-all duration-500';
+                resBar.style.width = `${percentage}%`;
+                resRec.innerHTML = `<span class="text-amber-300 font-medium">⚠️ Sisa umur di bawah standar gudang (${percentage.toFixed(1)}% < ${threshold}%). Sisa ${remainingDays} hari. Butuh persetujuan khusus / alokasikan promo fast moving.</span>`;
+            }
+
+            lucide.createIcons();
+            return {
+                totalDays: masterDays,
+                remainingDays,
+                elapsedDays,
+                percentage: parseFloat(percentage.toFixed(2)),
+                status,
+                statusLabel,
+                threshold
+            };
+        }
+
+        // Form Submit
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const calc = calculateShelfLife();
+            if (!calc) {
+                alert('Mohon periksa kembali tanggal yang Anda masukkan.');
+                return;
+            }
+
+            const code = document.getElementById('productCode').value.trim() || '-';
+            const productName = document.getElementById('productName').value.trim();
+            const isi = document.getElementById('masterIsi').value;
+            const isiKtn = document.getElementById('masterIsiKtn').value;
+            const qtyKtn = parseFloat(document.getElementById('qtyKtn').value) || 1;
+            const supplier = document.getElementById('supplier').value.trim() || 'PT Kaldu Sari Nabati';
+            const receiveDate = document.getElementById('receiveDate').value;
+            const expDate = document.getElementById('expDate').value;
+            const notes = document.getElementById('notes').value.trim() || '-';
+
+            const newRecord = {
+                id: 'GR-' + (Date.now().toString().slice(-4)),
+                code,
+                productName,
+                isi,
+                isiKtn,
+                qtyKtn,
+                supplier,
+                receiveDate,
+                expDate,
+                totalDays: calc.totalDays,
+                remainingDays: calc.remainingDays,
+                percentage: calc.percentage,
+                threshold: calc.threshold,
+                status: calc.status,
+                statusLabel: calc.statusLabel,
+                notes,
+                createdAt: new Date().toISOString()
+            };
+
+            records.unshift(newRecord);
+            saveRecords();
+            showToast('✅ Penerimaan barang berhasil dicatat!');
+
+            setTimeout(() => {
+                switchTab('history');
+            }, 500);
+
+            resetForm();
+        }
+
+        function resetForm() {
+            document.getElementById('grForm').reset();
+            document.getElementById('productCode').value = '';
+            document.getElementById('masterIsi').value = '-';
+            document.getElementById('masterIsiKtn').value = '-';
+            document.getElementById('masterShelfLifeDays').value = '360';
+            document.getElementById('displayMasterMonths').innerText = '12 Bulan';
+            document.getElementById('displayMasterDays').innerText = '360 Hari';
+            setTodayReceiving();
+            document.getElementById('minThreshold').value = '75';
+            calculateShelfLife();
+        }
+
+        // Render History List
+        function renderHistoryList() {
+            const container = document.getElementById('historyListContainer');
+            const emptyState = document.getElementById('emptyState');
+            const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase();
+
+            if (!container) return;
+
+            let filtered = records.filter(item => {
+                const matchStatus = currentStatusFilter === 'ALL' || item.status === currentStatusFilter;
+                const matchSearch = item.productName.toLowerCase().includes(searchQuery) ||
+                                    (item.code && item.code.toLowerCase().includes(searchQuery)) ||
+                                    item.supplier.toLowerCase().includes(searchQuery) ||
+                                    item.id.toLowerCase().includes(searchQuery);
+                return matchStatus && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            let html = '';
+            filtered.forEach(item => {
+                let badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                let iconName = 'check-circle';
+                let barColor = 'bg-emerald-500';
+
+                if (item.status === 'WARNING') {
+                    badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+                    iconName = 'alert-triangle';
+                    barColor = 'bg-amber-500';
+                } else if (item.status === 'REJECTED') {
+                    badgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
+                    iconName = 'x-circle';
+                    barColor = 'bg-rose-500';
+                }
+
+                html += `
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:border-slate-300 transition space-y-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-mono">${item.code || item.id}</span>
+                                <span class="text-[11px] text-slate-400">Masuk: ${formatDateID(item.receiveDate)}</span>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-sm leading-snug">${item.productName}</h3>
+                            <p class="text-[11px] text-slate-500 font-medium"><b class="text-slate-700">${item.qtyKtn} Karton</b> &bull; ${item.supplier || 'PT Kaldu Sari Nabati'}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="text-lg sm:text-xl font-extrabold ${item.percentage >= item.threshold ? 'text-emerald-600' : (item.percentage > 0 ? 'text-amber-600' : 'text-rose-600')}">
+                                ${item.percentage.toFixed(1)}%
+                            </span>
+                            <span class="block text-[10px] font-medium text-slate-400">Sisa Umur</span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div class="${barColor} h-full rounded-full" style="width: ${item.percentage}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Dates & Qty Grid -->
+                    <div class="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl text-center text-[11px]">
+                        <div>
+                            <span class="text-slate-400 block text-[9px] uppercase">Kadaluarsa (EXP)</span>
+                            <span class="font-bold text-slate-700">${formatDateID(item.expDate)}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[9px] uppercase">Sisa Hari</span>
+                            <span class="font-bold ${item.remainingDays > 0 ? 'text-emerald-700' : 'text-rose-600'}">${item.remainingDays} Hari</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[9px] uppercase">Total Umur</span>
+                            <span class="font-bold text-slate-700">${item.totalDays} Hari</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer Action & Status -->
+                    <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${badgeClass}">
+                            <i data-lucide="${iconName}" class="w-3 h-3"></i>
+                            <span>${item.statusLabel}</span>
+                        </span>
+                        
+                        <div class="flex items-center gap-2">
+                            ${item.notes && item.notes !== '-' ? `<span class="text-[10px] text-slate-400 italic truncate max-w-[120px]" title="${item.notes}">"${item.notes}"</span>` : ''}
+                            <button onclick="deleteRecord('${item.id}')" title="Hapus" class="p-1 text-slate-300 hover:text-rose-500 transition">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // Render Master Table
+        function renderMasterTable() {
+            const container = document.getElementById('masterListContainer');
+            const query = (document.getElementById('masterFilterInput')?.value || '').toLowerCase().trim();
+            if (!container) return;
+
+            let filtered = masterList.filter(p => 
+                p.code.toLowerCase().includes(query) || 
+                p.name.toLowerCase().includes(query)
+            ).slice(0, 100);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-xs text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
+                        <i data-lucide="package-search" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+                        <p class="font-semibold text-slate-600">Tidak ada produk ditemukan.</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Coba kata kunci lain atau klik tombol <b>"+ Tambah Master"</b> di atas.</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(p => {
+                html += `
+                <div class="bg-white p-3.5 rounded-2xl border ${p.isCustom ? 'border-amber-200 bg-amber-50/10' : 'border-slate-200'} shadow-sm flex items-center justify-between gap-3 hover:border-emerald-300 transition">
+                    <div class="space-y-0.5 min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-mono text-[11px] font-bold">${p.code}</span>
+                            ${p.isCustom ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Baru</span>' : ''}
+                            <span class="text-xs font-bold text-slate-800 truncate">${p.name}</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500">
+                            Isi: <b class="text-slate-700">${p.isi}</b> (${p.isiKtn}/ktn) &bull; Shelf Life: <b class="text-emerald-700">${p.shelfLifeDays} Hari</b> (${p.shelfLifeMonths} Bulan)
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="useMasterInGR('${p.code}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1 shadow-sm">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Input GR</span>
+                        </button>
+                        ${p.isCustom ? `
+                        <button onclick="deleteCustomMaster('${p.code}')" title="Hapus Master Ini" class="p-1.5 text-slate-300 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>` : ''}
+                    </div>
+                </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function useMasterInGR(code) {
+            selectMasterProduct(code);
+            switchTab('input');
+        }
+
+        // ================= MASTER PRODUCT MODAL & MANAGEMENT =================
+        function openAddMasterModal() {
+            document.getElementById('addMasterModal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('newMasterCode').focus();
+            }, 100);
+            lucide.createIcons();
+        }
+
+        function closeAddMasterModal() {
+            document.getElementById('addMasterModal').classList.add('hidden');
+            document.getElementById('addMasterForm').reset();
+            document.getElementById('newMasterMonths').value = '12';
+            document.getElementById('newMasterDays').value = '360';
+        }
+
+        function onNewMasterMonthsInput(val) {
+            const months = parseInt(val) || 0;
+            document.getElementById('newMasterDays').value = months * 30;
+        }
+
+        function saveNewMasterProduct(e) {
+            e.preventDefault();
+            const code = document.getElementById('newMasterCode').value.trim();
+            const name = document.getElementById('newMasterName').value.trim();
+            const isi = document.getElementById('newMasterIsi').value.trim() || '24';
+            const isiKtn = document.getElementById('newMasterIsiKtn').value.trim() || '24';
+            const shelfLifeMonths = parseInt(document.getElementById('newMasterMonths').value) || 12;
+            const shelfLifeDays = parseInt(document.getElementById('newMasterDays').value) || (shelfLifeMonths * 30);
+
+            if (!code || !name) {
+                alert('Kode barang dan nama produk wajib diisi!');
+                return;
+            }
+
+            // Check if code already exists in masterList
+            const existing = masterList.find(p => p.code.toLowerCase() === code.toLowerCase());
+            if (existing) {
+                if (!confirm(`Kode barang "${code}" sudah terdaftar dengan nama "${existing.name}". Apakah Anda ingin memperbarui datanya?`)) {
+                    return;
+                }
+            }
+
+            const newMasterItem = {
+                code,
+                name,
+                isi,
+                isiKtn,
+                shelfLifeMonths,
+                shelfLifeDays,
+                isCustom: true,
+                createdAt: new Date().toISOString()
+            };
+
+            let custom = [];
+            const rawCustom = localStorage.getItem(CUSTOM_MASTER_KEY);
+            if (rawCustom) {
+                try { custom = JSON.parse(rawCustom); } catch(err) { custom = []; }
+            }
+
+            // Remove existing custom with same code if any
+            custom = custom.filter(p => p.code.toLowerCase() !== code.toLowerCase());
+            custom.unshift(newMasterItem);
+            localStorage.setItem(CUSTOM_MASTER_KEY, JSON.stringify(custom));
+
+            loadMasterList();
+            renderMasterTable();
+            closeAddMasterModal();
+            showToast(`✅ Master Barang "${name}" berhasil disimpan!`);
+        }
+
+        function deleteCustomMaster(code) {
+            if (confirm(`Yakin ingin menghapus master barang "${code}" dari database?`)) {
+                let custom = [];
+                const rawCustom = localStorage.getItem(CUSTOM_MASTER_KEY);
+                if (rawCustom) {
+                    try { custom = JSON.parse(rawCustom); } catch(err) { custom = []; }
+                }
+                custom = custom.filter(p => p.code !== code);
+                localStorage.setItem(CUSTOM_MASTER_KEY, JSON.stringify(custom));
+                loadMasterList();
+                renderMasterTable();
+                showToast(`Master barang "${code}" telah dihapus.`);
+            }
+        }
+
+        function exportMasterToExcel() {
+            if (masterList.length === 0) {
+                alert('Tidak ada data master barang.');
+                return;
+            }
+
+            const exportData = masterList.map((p, idx) => ({
+                'No': idx + 1,
+                'Kode Barang': p.code,
+                'Nama Produk': p.name,
+                'Isi Satuan': p.isi,
+                'Isi per Karton / Box': p.isiKtn,
+                'Umur (Bulan)': p.shelfLifeMonths,
+                'Total Shelf Life (Hari)': p.shelfLifeDays,
+                'Status Database': p.isCustom ? 'Custom Baru' : 'Master BJM'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            worksheet['!cols'] = [
+                { wch: 5 }, { wch: 14 }, { wch: 40 }, { wch: 12 }, { wch: 18 },
+                { wch: 14 }, { wch: 24 }, { wch: 16 }
+            ];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Master Barang');
+            const today = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `Master_Barang_Banjarmasin_MT_${today}.xlsx`);
+            showToast('📊 File Master Data Excel berhasil diunduh!');
+        }
+
+        function setStatusFilter(status) {
+            currentStatusFilter = status;
+            const buttons = ['ALL', 'ACCEPTED', 'WARNING', 'REJECTED'];
+            buttons.forEach(b => {
+                const btn = document.getElementById(`filter-btn-${b}`);
+                if (btn) {
+                    if (b === status) {
+                        btn.className = 'filter-pill px-3 py-1.5 rounded-xl bg-slate-800 text-white shrink-0 font-bold';
+                    } else {
+                        btn.className = 'filter-pill px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0 font-medium';
+                    }
+                }
+            });
+            renderHistoryList();
+        }
+
+        function deleteRecord(id) {
+            if (confirm(`Hapus data penerimaan ${id}?`)) {
+                records = records.filter(r => r.id !== id);
+                saveRecords();
+                showToast('Data dihapus');
+                renderHistoryList();
+            }
+        }
+
+        // Dashboard Analytics
+        function updateDashboard() {
+            const total = records.length;
+            const accepted = records.filter(r => r.status === 'ACCEPTED').length;
+            const warning = records.filter(r => r.status === 'WARNING').length;
+            const rejected = records.filter(r => r.status === 'REJECTED').length;
+
+            document.getElementById('kpi-total-items').innerText = total;
+            document.getElementById('kpi-accepted').innerText = accepted;
+            document.getElementById('kpi-warning').innerText = warning;
+            document.getElementById('kpi-rejected').innerText = rejected;
+
+            const acceptedPct = total > 0 ? ((accepted / total) * 100).toFixed(0) : 0;
+            document.getElementById('kpi-accepted-pct').innerText = `${acceptedPct}% dari total`;
+
+            let avgPct = 0;
+            if (total > 0) {
+                const sum = records.reduce((acc, r) => acc + (r.percentage || 0), 0);
+                avgPct = (sum / total).toFixed(1);
+            }
+            document.getElementById('kpi-avg-pct').innerText = `${avgPct}%`;
+
+            const healthBadge = document.getElementById('kpi-health-badge');
+            if (avgPct >= 75) {
+                healthBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800';
+                healthBadge.innerText = 'Sangat Sehat (Optimal)';
+            } else if (avgPct >= 50) {
+                healthBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800';
+                healthBadge.innerText = 'Cukup / Perlu Perhatian';
+            } else {
+                healthBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800';
+                healthBadge.innerText = 'Kritis / High Risk';
+            }
+
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = [accepted, warning, rejected];
+                chartInstance.update();
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('shelfLifeChart');
+            if (!ctx) return;
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Lolos (>=75%)', 'Approval (<75%)', 'Ditolak/Exp'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // Switch Tabs
+        function switchTab(tabName) {
+            const tabs = ['input', 'master', 'dashboard', 'history'];
+            tabs.forEach(t => {
+                const sec = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const mob = document.getElementById(`mobile-nav-${t}`);
+
+                if (t === tabName) {
+                    if (sec) sec.classList.remove('hidden');
+                    if (btn) btn.className = 'py-2.5 rounded-xl transition flex items-center justify-center gap-1 bg-white text-emerald-700 shadow-sm font-bold';
+                    if (mob) mob.className = 'flex flex-col items-center gap-1 text-emerald-600 font-semibold py-1';
+                } else {
+                    if (sec) sec.classList.add('hidden');
+                    if (btn) btn.className = 'py-2.5 rounded-xl transition flex items-center justify-center gap-1 text-slate-600 hover:text-slate-900 font-medium';
+                    if (mob) mob.className = 'flex flex-col items-center gap-1 text-slate-500 hover:text-slate-800 py-1';
+                }
+            });
+
+            if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'history') renderHistoryList();
+            if (tabName === 'master') renderMasterTable();
+            lucide.createIcons();
+        }
+
+        // Export Functions
+        function openExportModal() {
+            document.getElementById('exportModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        function exportToExcel() {
+            if (records.length === 0) {
+                alert('Belum ada data untuk diekspor.');
+                return;
+            }
+
+            const exportData = records.map((r, index) => ({
+                'No': index + 1,
+                'Kode Barang': r.code,
+                'Nama Produk': r.productName,
+                'Qty Karton': r.qtyKtn,
+                'Supplier': r.supplier,
+                'Tanggal Penerimaan': r.receiveDate,
+                'Tanggal Kadaluarsa (EXP)': r.expDate,
+                'Total Shelf Life (Hari)': r.totalDays,
+                'Sisa Umur (Hari)': r.remainingDays,
+                'Sisa Umur (%)': (r.percentage / 100),
+                'Standar SLA (%)': `${r.threshold}%`,
+                'Status Penerimaan': r.statusLabel,
+                'Catatan': r.notes
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            worksheet['!cols'] = [
+                { wch: 4 }, { wch: 12 }, { wch: 32 }, { wch: 12 }, { wch: 22 },
+                { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
+                { wch: 12 }, { wch: 22 }, { wch: 25 }
+            ];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'GR Banjarmasin MT');
+            const today = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `Laporan_Penerimaan_Barang_Banjarmasin_MT_${today}.xlsx`);
+
+            closeExportModal();
+            showToast('📊 File Excel berhasil diunduh!');
+        }
+
+        function exportToCSV() {
+            if (records.length === 0) {
+                alert('Belum ada data.');
+                return;
+            }
+            let csvContent = 'data:text/csv;charset=utf-8,';
+            csvContent += 'No,Kode Barang,Nama Produk,Qty Karton,Supplier,Tgl Terima,Tgl Exp,Total Hari,Sisa Hari,% Sisa Umur,Status,Catatan\n';
+
+            records.forEach((r, i) => {
+                const row = [
+                    i + 1,
+                    `"${r.code}"`,
+                    `"${r.productName.replace(/"/g, '""')}"`,
+                    r.qtyKtn,
+                    `"${r.supplier}"`,
+                    `"${r.receiveDate}"`,
+                    `"${r.expDate}"`,
+                    r.totalDays,
+                    r.remainingDays,
+                    `${r.percentage}%`,
+                    `"${r.statusLabel}"`,
+                    `"${r.notes.replace(/"/g, '""')}"`
+                ].join(',');
+                csvContent += row + '\n';
+            });
+
+            const link = document.createElement('a');
+            link.setAttribute('href', encodeURI(csvContent));
+            link.setAttribute('download', `Laporan_GR_Banjarmasin_MT_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            closeExportModal();
+            showToast('📄 File CSV berhasil diunduh!');
+        }
+
+        function printOrPDF() {
+            closeExportModal();
+            window.print();
+        }
+
+        function shareWhatsAppSummary() {
+            if (records.length === 0) {
+                alert('Belum ada data.');
+                return;
+            }
+            const today = formatDateID(new Date().toISOString().split('T')[0]);
+            let text = `*📊 SHELFLIFE PENERIMAAN BARANG BANJARMASIN MT*\n`;
+            text += `📅 Tanggal: ${today}\n`;
+            text += `📦 Total GR: ${records.length} item\n\n`;
+
+            records.slice(0, 10).forEach((r, idx) => {
+                const icon = r.status === 'ACCEPTED' ? '✅' : (r.status === 'WARNING' ? '⚠️' : '❌');
+                text += `${idx + 1}. ${icon} *[${r.code}] ${r.productName}*\n`;
+                text += `   - Qty: ${r.qtyKtn} Karton (${r.supplier || 'PT Kaldu Sari Nabati'})\n`;
+                text += `   - Sisa Umur: *${r.percentage.toFixed(1)}%* (${r.remainingDays} hari)\n`;
+                text += `   - EXP: ${formatDateID(r.expDate)} | Status: ${r.statusLabel}\n\n`;
+            });
+
+            if (records.length > 10) {
+                text += `... dan ${records.length - 10} data lainnya.\n`;
+            }
+            text += `_Dibuat via ShelfLife Penerimaan Barang Banjarmasin MT_`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                closeExportModal();
+                showToast('📋 Rekap WhatsApp disalin!');
+            }).catch(() => {
+                alert('Gagal menyalin otomatis.');
+            });
+        }
+
+        function formatDateID(dateStr) {
+            if (!dateStr || dateStr === '-') return '-';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
